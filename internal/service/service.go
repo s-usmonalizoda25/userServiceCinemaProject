@@ -3,9 +3,13 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
+	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/cache"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/repository"
+	"go.uber.org/zap"
 )
 
 type Hasher interface {
@@ -15,13 +19,17 @@ type Hasher interface {
 
 type Service struct {
 	repo   *repository.Repository
+	cache  cache.ICache
 	hasher Hasher
+	log    *zap.Logger
 }
 
-func New(repo *repository.Repository, hasher Hasher) *Service {
+func New(repo *repository.Repository, cache cache.ICache, hasher Hasher, log *zap.Logger) *Service {
 	return &Service{
 		repo:   repo,
+		cache:  cache,
 		hasher: hasher,
+		log:    log,
 	}
 }
 
@@ -35,19 +43,42 @@ func (s *Service) CreateUser(ctx context.Context, u *models.User) (int64, error)
 
 	hashedPassword, err := s.hasher.Hash(u.Password)
 	if err != nil {
+		s.log.Error("failed to hash password", zap.Error(err))
 		return 0, err
 	}
 	u.Password = hashedPassword
 
 	id, err := s.repo.CreateUser(ctx, u)
 	if err != nil {
+		s.log.Error("failed to create user in db", zap.Error(err))
 		return 0, err
 	}
+	s.log.Info("user created", zap.Int64("id", id))
 	return id, nil
 }
 
 func (s *Service) GetUser(ctx context.Context, id int64) (*models.User, error) {
-	return s.repo.GetUser(ctx, id)
+	var user models.User
+	key := fmt.Sprintf("user:%d", id)
+
+	err := s.cache.Get(ctx, key, &user)
+	if err == nil {
+		s.log.Info("user found in cache", zap.Int64("id", id))
+		return &user, nil
+	}
+
+	u, err := s.repo.GetUser(ctx, id)
+	if err != nil {
+		s.log.Error("failed to get user from db", zap.Int64("id", id), zap.Error(err))
+		return nil, err
+	}
+
+	err = s.cache.Save(ctx, key, u, time.Hour)
+	if err != nil {
+		s.log.Error("failed to save user to cache", zap.Error(err))
+	}
+
+	return u, nil
 }
 
 func (s *Service) UpdateUser(ctx context.Context, u *models.User) error {
