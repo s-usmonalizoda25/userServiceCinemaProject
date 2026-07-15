@@ -20,10 +20,11 @@ func New(pool *pgxpool.Pool) *Repository {
 
 func (r *Repository) CreateUser(ctx context.Context, u *models.User) (int64, error) {
 	var id int64
-	query := `INSERT INTO users (name, email, phone, password, age) 
-              VALUES ($1, $2, $3, $4, $5) RETURNING id`
 
-	err := r.pool.QueryRow(ctx, query, u.Name, u.Email, u.Phone, u.Password, u.Age).Scan(&id)
+	query := `INSERT INTO users (name, email, phone, password, age, role) 
+              VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
+
+	err := r.pool.QueryRow(ctx, query, u.Name, u.Email, u.Phone, u.Password, u.Age, u.Role).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {

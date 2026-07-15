@@ -5,5 +5,6 @@ CREATE TABLE IF NOT EXISTS users (
     phone VARCHAR(20),
     password VARCHAR(255),
     age INTEGER,
+    role INTEGER DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

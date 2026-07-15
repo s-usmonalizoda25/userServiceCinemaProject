@@ -3,7 +3,7 @@ package server
 import (
 	"context"
 
-	userv1 "github.com/s-usmonalizoda25/protoCinemaService/gen/user"
+	userpb "github.com/s-usmonalizoda25/protoCinemaService/gen/user"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/service"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/token"
@@ -13,7 +13,7 @@ import (
 )
 
 type Server struct {
-	userv1.UnimplementedUserServiceServer
+	userpb.UnimplementedUserServiceServer
 	log *zap.Logger
 	svc *service.Service
 }
@@ -25,13 +25,14 @@ func New(log *zap.Logger, svc *service.Service) *Server {
 	}
 }
 
-func (s *Server) Add(ctx context.Context, req *userv1.CreateUserRequest) (*userv1.CreateUserResponse, error) {
+func (s *Server) Add(ctx context.Context, req *userpb.CreateUserRequest) (*userpb.CreateUserResponse, error) {
 	user := &models.User{
 		Name:     req.Name,
 		Email:    req.Email,
 		Phone:    req.Phone,
 		Password: req.Password,
 		Age:      req.Age,
+		Role:     1,
 	}
 
 	id, err := s.svc.CreateUser(ctx, user)
@@ -42,25 +43,26 @@ func (s *Server) Add(ctx context.Context, req *userv1.CreateUserRequest) (*userv
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &userv1.CreateUserResponse{Id: id}, nil
+	return &userpb.CreateUserResponse{Id: id}, nil
 }
 
-func (s *Server) GetByID(ctx context.Context, req *userv1.GetUserRequest) (*userv1.GetUserResponse, error) {
+func (s *Server) GetByID(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 	user, err := s.svc.GetUser(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	return &userv1.GetUserResponse{
+	return &userpb.GetUserResponse{
 		Id:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
 		Phone: user.Phone,
 		Age:   user.Age,
+		Role:  userpb.UserRole(user.Role),
 	}, nil
 }
 
-func (s *Server) Update(ctx context.Context, req *userv1.UpdateUserRequest) (*userv1.UpdateUserResponse, error) {
+func (s *Server) Update(ctx context.Context, req *userpb.UpdateUserRequest) (*userpb.UpdateUserResponse, error) {
 	user := &models.User{
 		ID:    req.Id,
 		Name:  req.Name,
@@ -69,26 +71,27 @@ func (s *Server) Update(ctx context.Context, req *userv1.UpdateUserRequest) (*us
 
 	err := s.svc.UpdateUser(ctx, user)
 	if err != nil {
-		return &userv1.UpdateUserResponse{Code: 500, Message: "failed to update"}, err
+		return &userpb.UpdateUserResponse{Code: 500, Message: "failed to update"}, err
 	}
-	return &userv1.UpdateUserResponse{Code: 200, Message: "success"}, nil
+	return &userpb.UpdateUserResponse{Code: 200, Message: "success"}, nil
 }
 
-func (s *Server) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.LoginResponse, error) {
+func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.LoginResponse, error) {
 	user, err := s.svc.Login(ctx, req.Email, req.Password)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid email or password")
 	}
 
-	accessToken, refreshToken, err := token.GenerateTokens(user.ID)
+	accessToken, refreshToken, err := token.GenerateTokens(user.ID, user.Role)
 	if err != nil {
 		s.log.Error("failed to generate tokens", zap.Error(err))
 		return nil, status.Error(codes.Internal, "failed to generate tokens")
 	}
 
-	return &userv1.LoginResponse{
+	return &userpb.LoginResponse{
 		Id:           user.ID,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
+		Role:         user.Role,
 	}, nil
 }

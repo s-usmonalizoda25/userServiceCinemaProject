@@ -7,7 +7,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
-	github.com/s-usmonalizoda25/protoCinemaService v0.0.0-20260715075719-3c64b5db523b
+	github.com/s-usmonalizoda25/protoCinemaService v0.0.0-20260715100535-51774a3c5e1e
 	go.uber.org/zap v1.28.0
 	golang.org/x/crypto v0.50.0
 	google.golang.org/grpc v1.82.0
