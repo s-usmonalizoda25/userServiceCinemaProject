@@ -1,3 +1,0 @@
-protoc --go_out=userServiceCinemaProject \
-       --go-grpc_out=userServiceCinemaProject \
-       protoCinemaProject/proto/user/user.proto

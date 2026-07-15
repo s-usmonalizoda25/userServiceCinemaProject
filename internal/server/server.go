@@ -6,6 +6,7 @@ import (
 	userv1 "github.com/s-usmonalizoda25/protoCinemaService/gen/user"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/service"
+	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/token"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -71,4 +72,23 @@ func (s *Server) Update(ctx context.Context, req *userv1.UpdateUserRequest) (*us
 		return &userv1.UpdateUserResponse{Code: 500, Message: "failed to update"}, err
 	}
 	return &userv1.UpdateUserResponse{Code: 200, Message: "success"}, nil
+}
+
+func (s *Server) Login(ctx context.Context, req *userv1.LoginRequest) (*userv1.LoginResponse, error) {
+	user, err := s.svc.Login(ctx, req.Email, req.Password)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid email or password")
+	}
+
+	accessToken, refreshToken, err := token.GenerateTokens(user.ID)
+	if err != nil {
+		s.log.Error("failed to generate tokens", zap.Error(err))
+		return nil, status.Error(codes.Internal, "failed to generate tokens")
+	}
+
+	return &userv1.LoginResponse{
+		Id:           user.ID,
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }
