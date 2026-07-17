@@ -2,10 +2,12 @@ package server
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	userpb "github.com/s-usmonalizoda25/protoCinemaService/gen/user"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
+	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/repository"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/service"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/token"
 	"go.uber.org/zap"
@@ -52,7 +54,10 @@ func (s *Server) Add(ctx context.Context, req *userpb.CreateUserRequest) (*userp
 func (s *Server) GetByID(ctx context.Context, req *userpb.GetUserRequest) (*userpb.GetUserResponse, error) {
 	user, err := s.svc.GetUser(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "user not found")
+		}
+		return nil, status.Error(codes.Internal, "internal error")
 	}
 
 	return &userpb.GetUserResponse{

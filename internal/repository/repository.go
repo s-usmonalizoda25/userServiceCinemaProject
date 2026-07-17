@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
 )
+
+var ErrNotFound = errors.New("record not found")
 
 type Repository struct {
 	pool *pgxpool.Pool
@@ -40,6 +43,11 @@ func (r *Repository) GetUser(ctx context.Context, id int64) (*models.User, error
 	u := &models.User{ID: id}
 	query := `SELECT name, email, phone, age FROM users WHERE id = $1`
 	err := r.pool.QueryRow(ctx, query, id).Scan(&u.Name, &u.Email, &u.Phone, &u.Age)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrNotFound
+	}
+
 	return u, err
 }
 
