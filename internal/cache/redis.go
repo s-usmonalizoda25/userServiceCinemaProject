@@ -14,6 +14,7 @@ import (
 type ICache interface {
 	Save(ctx context.Context, key string, data any, duration time.Duration) error
 	Get(ctx context.Context, key string, data any) error
+	Delete(ctx context.Context, key string) error
 }
 
 type cache struct {
@@ -73,5 +74,13 @@ func (c *cache) Get(ctx context.Context, key string, data any) error {
 		return fmt.Errorf("json.Unmarshal: %w", err)
 	}
 
+	return nil
+}
+
+func (c *cache) Delete(ctx context.Context, key string) error {
+	err := c.client.Del(ctx, key).Err()
+	if err != nil {
+		return fmt.Errorf("client.Del: %w", err)
+	}
 	return nil
 }

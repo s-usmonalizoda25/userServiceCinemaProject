@@ -82,6 +82,12 @@ func (s *Service) GetUser(ctx context.Context, id int64) (*models.User, error) {
 }
 
 func (s *Service) UpdateUser(ctx context.Context, u *models.User) error {
+	key := fmt.Sprintf("user:%d", u.ID)
+	err := s.cache.Delete(ctx, key)
+	if err != nil {
+		s.log.Warn("failed to delete user from cache on update", zap.Error(err))
+	}
+
 	return s.repo.UpdateUser(ctx, u)
 }
 
