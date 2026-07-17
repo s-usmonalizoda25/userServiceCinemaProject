@@ -7,6 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+type Claims struct {
+	UserID int64 `json:"user_id"`
+	Role   int32 `json:"role"`
+	jwt.RegisteredClaims
+}
+
 func GenerateTokens(userID int64, role int32) (string, string, error) {
 	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 
@@ -31,4 +37,22 @@ func GenerateTokens(userID int64, role int32) (string, string, error) {
 	}
 
 	return accessString, refreshString, nil
+}
+
+func ValidateToken(tokenString string) (*Claims, error) {
+	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
+
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return secretKey, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, jwt.ErrInvalidKey
 }

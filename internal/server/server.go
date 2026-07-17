@@ -2,13 +2,16 @@ package server
 
 import (
 	"context"
+	"strings"
 
 	userpb "github.com/s-usmonalizoda25/protoCinemaService/gen/user"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/models"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/service"
 	"github.com/s-usmonalizoda25/userServiceCinemaProject/internal/token"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -94,4 +97,31 @@ func (s *Server) Login(ctx context.Context, req *userpb.LoginRequest) (*userpb.L
 		RefreshToken: refreshToken,
 		Role:         user.Role,
 	}, nil
+}
+
+func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	if info.FullMethod == "/user.v1.UserService/Add" || info.FullMethod == "/user.v1.UserService/Login" {
+		return handler(ctx, req)
+	}
+
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "metadata is not provided")
+	}
+
+	values := md.Get("authorization")
+	if len(values) == 0 {
+		return nil, status.Errorf(codes.Unauthenticated, "authorization token is not provided")
+	}
+
+	tokenString := strings.TrimPrefix(values[0], "Bearer ")
+
+	claims, err := token.ValidateToken(tokenString)
+	if err != nil {
+		return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
+	}
+
+	newCtx := context.WithValue(ctx, "user_id", claims.UserID)
+
+	return handler(newCtx, req)
 }

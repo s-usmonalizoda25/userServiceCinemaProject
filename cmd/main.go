@@ -61,7 +61,9 @@ func main() {
 		l.Fatal("failed to init cache", zap.Error(err))
 	}
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(server.AuthInterceptor),
+	)
 	hasher := security.NewBcryptHasher(12)
 	repo := repository.New(dbPool)
 
