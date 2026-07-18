@@ -59,7 +59,7 @@ func (r *Repository) UpdateUser(ctx context.Context, u *models.User) error {
 
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	u := &models.User{}
-	query := `SELECT id, name, email, phone, password, age FROM users WHERE email = $1`
-	err := r.pool.QueryRow(ctx, query, email).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Password, &u.Age)
+	query := `SELECT id, name, email, phone, password, age, role FROM users WHERE email = $1`
+	err := r.pool.QueryRow(ctx, query, email).Scan(&u.ID, &u.Name, &u.Email, &u.Phone, &u.Password, &u.Age, &u.Role)
 	return u, err
 }
