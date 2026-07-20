@@ -25,9 +25,10 @@ import (
 )
 
 func main() {
+
 	err := godotenv.Load("config/config.env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Println("config/config.env not found, using system environment variables")
 	}
 
 	l := logger.New()
