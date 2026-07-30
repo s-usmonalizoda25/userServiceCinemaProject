@@ -17,6 +17,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+type ctxKey string
+
+const userIDKey ctxKey = "user_id"
+
 type Server struct {
 	userpb.UnimplementedUserServiceServer
 	log *zap.Logger
@@ -126,7 +130,7 @@ func AuthInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		return nil, status.Errorf(codes.Unauthenticated, "invalid token: %v", err)
 	}
 
-	newCtx := context.WithValue(ctx, "user_id", claims.UserID)
+	newCtx := context.WithValue(ctx, userIDKey, claims.UserID)
 
 	return handler(newCtx, req)
 }

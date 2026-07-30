@@ -42,9 +42,14 @@ func GenerateTokens(userID int64, role int32) (string, string, error) {
 func ValidateToken(tokenString string) (*Claims, error) {
 	secretKey := []byte(os.Getenv("JWT_SECRET_KEY"))
 
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return secretKey, nil
-	})
+	token, err := jwt.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return secretKey, nil
+		},
+		jwt.WithValidMethods([]string{"HS256"}),
+	)
 
 	if err != nil {
 		return nil, err
