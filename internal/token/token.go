@@ -8,8 +8,9 @@ import (
 )
 
 type Claims struct {
-	UserID int64 `json:"user_id"`
-	Role   int32 `json:"role"`
+	UserID int64  `json:"user_id"`
+	Role   int32  `json:"role"`
+	Type   string `json:"type"`
 	jwt.RegisteredClaims
 }
 
@@ -19,6 +20,7 @@ func GenerateTokens(userID int64, role int32) (string, string, error) {
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
+		"type":    "access",
 		"exp":     time.Now().Add(time.Minute * 15).Unix(),
 	})
 	accessString, err := accessToken.SignedString(secretKey)
@@ -29,6 +31,7 @@ func GenerateTokens(userID int64, role int32) (string, string, error) {
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": userID,
 		"role":    role,
+		"type":    "refresh",
 		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(),
 	})
 	refreshString, err := refreshToken.SignedString(secretKey)
